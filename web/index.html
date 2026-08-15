@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📊 金融财报快捷分析</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-text">
+      <div class="brand">📊 金融财报快捷分析</div>
+      <div class="brand-sub">A 股财报爬取 · 指标计算 · AI 分析</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn-settings" id="btnOpenHistory" title="历史记录">📜 历史记录</button>
+      <button class="btn-settings" id="btnOpenSettings" title="设置">⚙️ 设置</button>
+    </div>
+  </div>
+</header>
+
+<!-- 优质公司推荐 -->
+<section class="recommend" id="recommendSection">
+  <div class="recommend-inner">
+    <div class="recommend-head">
+      <div>
+        <div class="recommend-title">🏆 优质公司推荐</div>
+        <div class="recommend-sub">按财务门槛自动筛选候选池中的优质 A 股，数据来自公开财报接口</div>
+      </div>
+      <div class="recommend-controls">
+        <select id="recSort" title="排序方式">
+          <option value="score">按综合评分</option>
+          <option value="roe">按 ROE</option>
+          <option value="net_margin">按净利率</option>
+          <option value="gross_margin">按毛利率</option>
+          <option value="revenue_yoy">按营收增速</option>
+          <option value="debt_ratio">按资产负债率(低→高)</option>
+        </select>
+        <button class="btn btn-primary" id="btnRefreshRec">🔄 刷新推荐</button>
+        <button class="btn btn-outline" id="btnOpenRecSettings">⚙️ 门槛</button>
+      </div>
+    </div>
+    <div id="recStatus" class="recommend-status"></div>
+    <div id="recList" class="recommend-list"></div>
+  </div>
+</section>
+
+<main class="layout">
+
+  <!-- 左侧：查询与分析面板 -->
+  <section class="panel">
+    <div class="panel-title">① 输入公司</div>
+    <div class="search-row">
+      <input type="text" id="companyInput" placeholder="请输入公司名称或股票代码，如：贵州茅台 / 600519"
+             autocomplete="off" spellcheck="false">
+      <button class="btn btn-primary" id="btnSearch">搜索</button>
+    </div>
+    <div id="searchResults" class="search-results"></div>
+    <button class="btn btn-confirm" id="btnConfirm" disabled>✅ 确认此公司并加载财报</button>
+
+    <div class="panel-title" style="margin-top:20px;">② 选择 AI 模型</div>
+    <div class="select-row">
+      <select id="providerSelect" title="AI 服务商"></select>
+      <select id="modelSelect" title="模型"></select>
+    </div>
+    <div class="hint" id="keyHint"></div>
+
+    <div class="panel-title" style="margin-top:20px;">③ 获取与分析</div>
+    <div class="action-row">
+      <button class="btn btn-download" id="btnDownload" title="仅抓取财报数据并生成 Excel，不调用 AI">📥 下载数据(Excel)</button>
+      <button class="btn btn-analyze" id="btnAnalyze">🚀 抓取财报并分析</button>
+      <label class="refresh-label">
+        <input type="checkbox" id="refreshCheck"> 强制重新抓取
+      </label>
+    </div>
+
+    <div id="status" class="status"></div>
+  </section>
+
+  <!-- 右侧：结果 -->
+  <section class="results">
+    <div id="rawDataWrap" class="results-wrap hidden">
+      <div class="result-head">
+        <h1 id="rawTitle">—</h1>
+        <div class="result-meta" id="rawMeta"></div>
+      </div>
+      <div class="card">
+        <h2>📄 原始财报数据</h2>
+        <div class="stmt-tabs" id="stmtTabs">
+          <button class="stmt-tab active" data-stmt="income">利润表</button>
+          <button class="stmt-tab" data-stmt="balance">资产负债表</button>
+          <button class="stmt-tab" data-stmt="cashflow">现金流量表</button>
+        </div>
+        <div class="table-wrap"><table id="stmtTable" class="data-table"></table></div>
+      </div>
+    </div>
+
+    <div id="empty" class="empty">
+      <div class="empty-icon">📈</div>
+      <p>输入公司名称，选择 AI 模型，点击「抓取财报并分析」</p>
+      <p class="empty-sub">系统将从公开财报接口抓取近 5 年数据，计算核心财务指标，并交由 AI 生成卖方分析师风格的研究报告。</p>
+    </div>
+
+    <div id="resultsWrap" class="results-wrap hidden">
+      <div class="result-head">
+        <h1 id="resultTitle">—</h1>
+        <div class="result-meta" id="resultMeta"></div>
+      </div>
+
+      <div class="card">
+        <h2>📋 核心指标速览</h2>
+        <div class="table-wrap">
+          <table id="overviewTable" class="data-table"></table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>📅 近 5 年趋势</h2>
+        <div class="table-wrap">
+          <table id="trendTable" class="data-table"></table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🤖 AI 分析报告</h2>
+        <div id="analysisContent" class="markdown"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  本工具仅用于研究学习，所生成的分析不构成任何投资建议。
+</footer>
+
+<!-- 设置面板 -->
+<div class="settings-overlay" id="settingsOverlay"></div>
+<aside class="settings-panel" id="settingsPanel">
+  <div class="settings-header">
+    <h2>⚙️ 设置</h2>
+    <button class="btn-close" id="btnCloseSettings" title="关闭">✕</button>
+  </div>
+
+  <div class="settings-body">
+
+    <div class="settings-section">
+      <h3>🔑 API 配置</h3>
+      <p class="settings-desc">
+        在此配置各 AI 服务商的 API Key，保存后立即生效。密钥仅存储在本机
+        <code>secrets.json</code> 中，不会上传到任何服务器。
+      </p>
+      <div id="apiConfigList" class="api-config-list"></div>
+    </div>
+
+    <div class="settings-section">
+      <h3>📦 运行依赖</h3>
+      <p class="settings-desc">
+        程序运行所需的 Python 依赖。缺失项可一键安装，或下载
+        <code>requirements.txt</code> 后手动安装。
+      </p>
+      <div id="depList" class="dep-list"></div>
+      <div class="dep-actions">
+        <button class="btn btn-primary" id="btnInstallDeps">🛠 一键安装缺失依赖</button>
+        <a class="btn btn-outline" href="/requirements.txt" download>⬇ 下载 requirements.txt</a>
+      </div>
+      <pre id="depLog" class="dep-log hidden"></pre>
+    </div>
+
+    <div class="settings-section">
+      <h3>🌐 数据获取设置</h3>
+      <p class="settings-desc">
+        数据优先通过网页 API 获取；API 不可用时按下面策略降级为爬虫（爬取时会进行伪装并限速）。
+        缓存命中后不再重复请求。
+      </p>
+      <div class="fetch-config">
+        <div class="field">
+          <label for="fsMode">获取方式</label>
+          <select id="fsMode">
+            <option value="auto">API 优先，失败降级为爬虫</option>
+            <option value="api_only">仅使用 API（不爬取网页）</option>
+          </select>
+        </div>
+        <div class="field toggle">
+          <label for="fsSpoofing">爬虫伪装（随机 User-Agent）</label>
+          <input type="checkbox" id="fsSpoofing">
+        </div>
+        <div class="field">
+          <label for="fsInterval">最小请求间隔（秒，减少访问量）</label>
+          <input type="number" id="fsInterval" min="0" max="60" step="1">
+        </div>
+        <div class="field">
+          <label for="fsRetries">失败重试次数</label>
+          <input type="number" id="fsRetries" min="0" max="10" step="1">
+        </div>
+        <div class="field">
+          <label for="fsTimeout">请求超时（秒）</label>
+          <input type="number" id="fsTimeout" min="5" max="120" step="1">
+        </div>
+        <div class="field">
+          <label for="fsTtl">缓存有效期（小时，0 = 永不过期）</label>
+          <input type="number" id="fsTtl" min="0" step="1">
+        </div>
+        <div class="field">
+          <label for="fsYears">抓取年数</label>
+          <input type="number" id="fsYears" min="1" max="20" step="1">
+        </div>
+        <div class="field toggle">
+          <label for="fsIncremental">增量更新（合并缓存中的旧数据）</label>
+          <input type="checkbox" id="fsIncremental">
+        </div>
+        <button class="btn btn-primary" id="btnSaveFetch">保存数据获取设置</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>🏆 优质公司推荐设置</h3>
+      <p class="settings-desc">
+        设置「优质公司」的财务门槛（百分比）。只有同时满足全部门槛的公司才会入选推荐榜，
+        并可按综合评分或单项指标排序。
+      </p>
+      <div class="fetch-config">
+        <div class="field">
+          <label for="recMaxCandidates">候选池数量（越多越慢，最多 100）</label>
+          <input type="number" id="recMaxCandidates" min="1" max="100" step="1">
+        </div>
+        <div class="field">
+          <label for="recMinRoe">最低 ROE（%）</label>
+          <input type="number" id="recMinRoe" min="-100" max="100" step="1">
+        </div>
+        <div class="field">
+          <label for="recMinNetMargin">最低净利率（%）</label>
+          <input type="number" id="recMinNetMargin" min="-100" max="100" step="1">
+        </div>
+        <div class="field">
+          <label for="recMinGrossMargin">最低毛利率（%）</label>
+          <input type="number" id="recMinGrossMargin" min="-100" max="100" step="1">
+        </div>
+        <div class="field">
+          <label for="recMinRevYoy">最低营收增速（%）</label>
+          <input type="number" id="recMinRevYoy" min="-200" max="200" step="1">
+        </div>
+        <div class="field">
+          <label for="recMaxDebt">最高资产负债率（%）</label>
+          <input type="number" id="recMaxDebt" min="0" max="100" step="1">
+        </div>
+        <button class="btn btn-primary" id="btnSaveRec">保存推荐设置</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>⚖️ 法律与合规</h3>
+      <p class="settings-desc">
+        本工具访问公开网站获取财务数据，请务必遵守相关法律法规、目标网站的服务条款与
+        <code>robots.txt</code>，仅用于个人研究学习，不得用于商业用途。
+      </p>
+      <button class="btn btn-outline" id="btnResetLegal">重新阅读法律声明</button>
+    </div>
+
+  </div>
+</aside>
+
+<!-- 历史记录面板 -->
+<div class="settings-overlay" id="historyOverlay"></div>
+<aside class="settings-panel" id="historyPanel">
+  <div class="settings-header">
+    <h2>📜 历史记录</h2>
+    <button class="btn-close" id="btnCloseHistory" title="关闭">✕</button>
+  </div>
+  <div class="settings-body">
+    <p class="settings-desc">
+      已保存的历史分析结果（按时间倒序）。点击「查看」可回看，点击「删除」移除单条。
+    </p>
+    <div class="dep-actions">
+      <button class="btn btn-outline" id="btnClearHistory">🗑 清空全部</button>
+    </div>
+    <div id="historyList" class="history-list"></div>
+  </div>
+</aside>
+
+<!-- 法律与合规确认弹窗 -->
+<div class="legal-overlay hidden" id="legalOverlay">
+  <div class="legal-modal">
+    <h2>⚠️ 法律与合规提醒</h2>
+    <div class="legal-body">
+      <p>本工具会访问公开网站获取 A 股上市公司的财务数据。在继续之前，请知悉并确认：</p>
+      <ul>
+        <li>数据仅用于<b>个人学习研究</b>，不得用于任何商业用途；</li>
+        <li>请遵守目标网站的 <code>robots.txt</code> 与使用条款，勿高频、大规模爬取；</li>
+        <li>程序已内置<b>限速</b>与<b>域名白名单</b>，请勿随意关闭限速或扩大白名单；</li>
+        <li>所生成的分析由 AI 自动生成，<b>不构成任何投资建议</b>；</li>
+        <li>因使用本工具造成的任何法律或经济后果，由使用者自行承担。</li>
+      </ul>
+    </div>
+    <label class="legal-agree">
+      <input type="checkbox" id="legalAgree"> 我已阅读并理解上述条款，同意仅用于合规的研究学习目的。
+    </label>
+    <div class="legal-actions">
+      <button class="btn btn-analyze" id="btnLegalConfirm" disabled>继续分析</button>
+      <button class="btn btn-outline" id="btnLegalCancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
