@@ -1,0 +1,143 @@
+{
+  "data_sources": {
+    "default_source": "eastmoney",
+    "allowed_domains": [
+      "searchapi.eastmoney.com",
+      "datacenter-web.eastmoney.com",
+      "emweb.securities.eastmoney.com",
+      "push2.eastmoney.com",
+      "suggest3.sinajs.cn",
+      "hq.sinajs.cn",
+      "qt.gtimg.cn",
+      "money.finance.sina.com.cn",
+      "www.cninfo.com.cn",
+      "static.cninfo.com.cn"
+    ]
+  },
+  "llm": {
+    "default_provider": "deepseek",
+    "providers": [
+      {
+        "name": "deepseek",
+        "display_name": "DeepSeek",
+        "type": "openai",
+        "base_url": "https://api.deepseek.com/v1",
+        "api_key": "env:DEEPSEEK_API_KEY",
+        "model": "deepseek-chat",
+        "models": ["deepseek-chat", "deepseek-reasoner"]
+      },
+      {
+        "name": "qwen",
+        "display_name": "通义千问（百炼兼容模式）",
+        "type": "openai",
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "api_key": "env:DASHSCOPE_API_KEY",
+        "model": "qwen-plus",
+        "models": ["qwen-max", "qwen-plus", "qwen-turbo"]
+      },
+      {
+        "name": "moonshot",
+        "display_name": "Kimi（月之暗面）",
+        "type": "openai",
+        "base_url": "https://api.moonshot.cn/v1",
+        "api_key": "env:MOONSHOT_API_KEY",
+        "model": "moonshot-v1-32k",
+        "models": ["moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"]
+      },
+      {
+        "name": "zhipu",
+        "display_name": "智谱 GLM",
+        "type": "openai",
+        "base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "api_key": "env:ZHIPU_API_KEY",
+        "model": "glm-4",
+        "models": ["glm-4", "glm-4-air"]
+      },
+      {
+        "name": "openai",
+        "display_name": "OpenAI",
+        "type": "openai",
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "env:OPENAI_API_KEY",
+        "model": "gpt-4o",
+        "models": ["gpt-4o", "gpt-4o-mini"]
+      },
+      {
+        "name": "anthropic",
+        "display_name": "Anthropic Claude",
+        "type": "anthropic",
+        "base_url": "https://api.anthropic.com",
+        "api_key": "env:ANTHROPIC_API_KEY",
+        "model": "claude-sonnet-5",
+        "models": ["claude-sonnet-5", "claude-haiku-4-5-20251001"]
+      },
+      {
+        "name": "ollama",
+        "display_name": "Ollama（本地模型）",
+        "type": "openai",
+        "base_url": "http://localhost:11434/v1",
+        "api_key": "",
+        "model": "qwen2.5",
+        "models": ["qwen2.5", "llama3.1"]
+      }
+    ]
+  },
+  "prompt_file": "prompt.txt",
+  "storage_dir": "data_store",
+  "request_timeout": 120,
+  "fetch": {
+    "mode": "auto",
+    "spoofing": true,
+    "min_interval_seconds": 3,
+    "max_retries": 2,
+    "timeout_seconds": 20,
+    "cache_ttl_hours": 24,
+    "max_years": 7,
+    "incremental": true
+  },
+  "recommend": {
+    "enabled": true,
+    "max_candidates": 15,
+    "candidates": [
+      {"code": "600519", "name": "贵州茅台"},
+      {"code": "000858", "name": "五粮液"},
+      {"code": "000333", "name": "美的集团"},
+      {"code": "000651", "name": "格力电器"},
+      {"code": "600887", "name": "伊利股份"},
+      {"code": "600690", "name": "海尔智家"},
+      {"code": "600809", "name": "山西汾酒"},
+      {"code": "000568", "name": "泸州老窖"},
+      {"code": "600276", "name": "恒瑞医药"},
+      {"code": "300760", "name": "迈瑞医疗"},
+      {"code": "600309", "name": "万华化学"},
+      {"code": "600900", "name": "长江电力"},
+      {"code": "601088", "name": "中国神华"},
+      {"code": "600585", "name": "海螺水泥"},
+      {"code": "002594", "name": "比亚迪"},
+      {"code": "603288", "name": "海天味业"},
+      {"code": "600600", "name": "青岛啤酒"},
+      {"code": "603259", "name": "药明康德"},
+      {"code": "300124", "name": "汇川技术"},
+      {"code": "002415", "name": "海康威视"},
+      {"code": "601012", "name": "隆基绿能"},
+      {"code": "300750", "name": "宁德时代"},
+      {"code": "600660", "name": "福耀玻璃"},
+      {"code": "002714", "name": "牧原股份"}
+    ],
+    "thresholds": {
+      "min_roe": 0.12,
+      "min_net_margin": 0.06,
+      "min_gross_margin": 0.20,
+      "min_revenue_yoy": -0.05,
+      "max_debt_ratio": 0.70
+    },
+    "score_weights": {
+      "roe": 0.35,
+      "net_margin": 0.20,
+      "gross_margin": 0.15,
+      "revenue_yoy": 0.20,
+      "debt_safety": 0.10
+    },
+    "sort_by": "score"
+  }
+}
